@@ -293,7 +293,7 @@ function operator(pro) {
   // 编号完成后，将倍率追加到序号末尾
   pro.forEach((e) => {
     if (e._ikey) {
-      e.name = e.name + FGF + e._ikey;
+      e.name = e.name + " " + e._ikey;
       delete e._ikey;
     }
   });
