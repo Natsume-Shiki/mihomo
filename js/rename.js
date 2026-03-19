@@ -42,7 +42,7 @@
 // const inArg = {'blkey':'iplc+GPT>GPTnewName+NF+IPLC', 'flag':true };
 const inArg = $arguments; // console.log(inArg)
 const nx = inArg.nx || false,
-  bl = inArg.bl || false,
+  bl = inArg.bl || true,
   nf = inArg.nf || false,
   key = inArg.key || false,
   blgd = inArg.blgd || false,
@@ -153,17 +153,6 @@ function operator(pro) {
     arr.forEach((value, valueIndex) => {
       Allmap[value] = outList[valueIndex];
     });
-  });
-
-  // 预处理：将"香港一区[三线] [1.0倍消耗]"格式转换为脚本可识别的格式
-  pro.forEach((e) => {
-    const rateMatch = e.name.match(/\[(\d+(?:\.\d+)?)倍(?:消耗|率)?\]/);
-    const rate = rateMatch ? parseFloat(rateMatch[1]) : null;
-    e.name = e.name.replace(/\[.*?\]/g, '').trim();
-    e.name = e.name.replace(/[一二三四五六七八九十]+区/, '').trim();
-    if (rate !== null && rate !== 1) {
-      e.name += ' ' + rate + 'x';
-    }
   });
 
   if (clear || nx || blnx || key) {
@@ -285,10 +274,12 @@ function operator(pro) {
           usflag = usflag === "🇹🇼" ? "🇨🇳" : usflag;
         }
       }
+      // ikey(倍率) 从此处移除，改为编号后追加
       keyover = keyover
-        .concat(firstName, usflag, nNames, findKeyValue, retainKey, ikey, ikeys)
+        .concat(firstName, usflag, nNames, findKeyValue, retainKey, ikeys)
         .filter((k) => k !== "");
       e.name = keyover.join(FGF);
+      e._ikey = ikey; // 暂存倍率，等 jxh 编号后再追加
     } else {
       if (nm) {
         e.name = FNAME + FGF + e.name;
@@ -299,6 +290,13 @@ function operator(pro) {
   });
   pro = pro.filter((e) => e.name !== null);
   jxh(pro);
+  // 编号完成后，将倍率追加到序号末尾
+  pro.forEach((e) => {
+    if (e._ikey) {
+      e.name = e.name + FGF + e._ikey;
+      delete e._ikey;
+    }
+  });
   numone && oneP(pro);
   blpx && (pro = fampx(pro));
   key && (pro = pro.filter((e) => !keyb.test(e.name)));
