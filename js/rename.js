@@ -155,6 +155,17 @@ function operator(pro) {
     });
   });
 
+  // 预处理：将"香港一区[三线] [1.0倍消耗]"格式转换为脚本可识别的格式
+  pro.forEach((e) => {
+    const rateMatch = e.name.match(/\[(\d+(?:\.\d+)?)倍(?:消耗|率)?\]/);
+    const rate = rateMatch ? parseFloat(rateMatch[1]) : null;
+    e.name = e.name.replace(/\[.*?\]/g, '').trim();
+    e.name = e.name.replace(/[一二三四五六七八九十]+区/, '').trim();
+    if (rate !== null && rate !== 1) {
+      e.name += ' ' + rate + 'x';
+    }
+  });
+
   if (clear || nx || blnx || key) {
     pro = pro.filter((res) => {
       const resname = res.name;
