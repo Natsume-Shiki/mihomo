@@ -1,4 +1,4 @@
-/**
+ /**
  * 更新日期：2024-04-05 15:30:15
  * 用法：Sub-Store 脚本操作添加
  * rename.js 以下是此脚本支持的参数，必须以 # 为开头多个参数使用"&"连接，参考上述地址为例使用参数。 禁用缓存url#noCache
@@ -37,12 +37,16 @@
  * [clear]  清理乱名
  * [blpx]   如果用了上面的bl参数,对保留标识后的名称分组排序,如果没用上面的bl参数单独使用blpx则不起任何作用
  * [blockquic] blockquic=on 阻止; blockquic=off 不阻止
+ *
+ *** 修改说明（2024）
+ * 输出格式调整为：地区名 + 序号 + 倍率/标识
+ * 例如：🇺🇸 美国01 10×
  */
 
 // const inArg = {'blkey':'iplc+GPT>GPTnewName+NF+IPLC', 'flag':true };
 const inArg = $arguments; // console.log(inArg)
 const nx = inArg.nx || false,
-  bl = inArg.bl || false,
+  bl = inArg.bl || true,
   nf = inArg.nf || false,
   key = inArg.key || false,
   blgd = inArg.blgd || false,
@@ -274,20 +278,33 @@ function operator(pro) {
           usflag = usflag === "🇹🇼" ? "🇨🇳" : usflag;
         }
       }
+      // 拼装地区名部分（不含倍率），倍率存到临时属性，jxh编号后再拼回
       keyover = keyover
-        .concat(firstName, usflag, nNames, findKeyValue, retainKey, ikey, ikeys)
-        .filter((k) => k !== "");
+        。concat(firstName, usflag, nNames, findKeyValue, retainKey)
+        。filter((k) => k !== "");
       e.name = keyover.join(FGF);
+      // 把倍率/标识临时挂到节点上，jxh之后再拼
+      e._suffix = [ikey, ikeys].filter((k) => k !== "").join(FGF);
     } else {
       if (nm) {
         e.name = FNAME + FGF + e.name;
+        e._suffix = [ikey, ikeys].filter((k) => k !== "").join(FGF);
       } else {
         e.name = null;
       }
     }
   });
   pro = pro.filter((e) => e.name !== null);
+  // jxh 按地区名分组编号，编号后把倍率拼回去
   jxh(pro);
+  // 编号完成后，把 _suffix 拼到名字末尾并清理临时属性
+  // 此处固定用空格分隔，避免 FGF 为空时序号和倍率粘连
+  pro.forEach((e) => {
+    if (e._suffix) {
+      e.name = e.name + " " + e._suffix;
+    }
+    delete e._suffix;
+  });
   numone && oneP(pro);
   blpx && (pro = fampx(pro));
   key && (pro = pro.filter((e) => !keyb.test(e.name)));
@@ -299,6 +316,6 @@ function getList(arg) { switch (arg) { case 'us': return EN; case 'gq': return F
 // prettier-ignore
 function jxh(e) { const n = e.reduce((e, n) => { const t = e.find((e) => e.name === n.name); if (t) { t.count++; t.items.push({ ...n, name: `${n.name}${XHFGF}${t.count.toString().padStart(2, "0")}`, }); } else { e.push({ name: n.name, count: 1, items: [{ ...n, name: `${n.name}${XHFGF}01` }], }); } return e; }, []);const t=(typeof Array.prototype.flatMap==='function'?n.flatMap((e) => e.items):n.reduce((acc, e) => acc.concat(e.items),[])); e.splice(0, e.length, ...t); return e;}
 // prettier-ignore
-function oneP(e) { const t = e.reduce((e, t) => { const n = t.name.replace(/[^A-Za-z0-9\u00C0-\u017F\u4E00-\u9FFF]+\d+$/, ""); if (!e[n]) { e[n] = []; } e[n].push(t); return e; }, {}); for (const e in t) { if (t[e].length === 1 && t[e][0].name.endsWith("01")) {/* const n = t[e][0]; n.name = e;*/ t[e][0].name= t[e][0].name.replace(/[^.]01/, "") } } return e; }
+function oneP(e) { const t = e.reduce((e, t) => { const n = t.name.replace(/[^A-Za-z0-9\u00C0-\u017F\u4E00-\u9FFF]+\d+(\s.*)?$/, ""); if (!e[n]) { e[n] = []; } e[n].push(t); return e; }, {}); for (const e in t) { if (t[e].length === 1 && /01(\s|$)/.test(t[e][0].name)) { t[e][0].name = t[e][0].name.replace(/[^.]01(\s)/, (m, s) => s || "").replace(/[^.]01$/, "") } } return e; }
 // prettier-ignore
 function fampx(pro) { const wis = []; const wnout = []; for (const proxy of pro) { const fan = specialRegex.some((regex) => regex.test(proxy.name)); if (fan) { wis.push(proxy); } else { wnout.push(proxy); } } const sps = wis.map((proxy) => specialRegex.findIndex((regex) => regex.test(proxy.name)) ); wis.sort( (a, b) => sps[wis.indexOf(a)] - sps[wis.indexOf(b)] || a.name.localeCompare(b.name) ); wnout.sort((a, b) => pro.indexOf(a) - pro.indexOf(b)); return wnout.concat(wis);}
